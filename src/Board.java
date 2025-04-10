@@ -29,6 +29,27 @@ public class Board {
         return moves;
     }
 
+    // Returns the ideal path to victory, in terms of peg index
+    public int[] findSolution(String currentState){
+        // Base case: if only one peg is left
+        int[] path = new int[15];
+        int pegCount = 0;
+        for (int i = 0; i < currentState.length(); i++){
+            char spot = currentState.charAt(i);
+            if (spot == '1'){
+                pegCount++;
+            }
+            if (pegCount > 1){
+                break;
+            }
+        }
+        if (pegCount == 1){
+            int end = currentState.indexOf("1");
+            return path;
+        }
+
+    }
+
     // Returns true if a spot on the board represents a valid move for
     // This method works based on integer indeces, rather than the
     public Boolean isValid(int spotIndex){
@@ -43,12 +64,52 @@ public class Board {
         if
 
 
+
         // Find up + down neighbors
 
         // Check to see if there is an empty spot right beyond any of the neighbors
         // If yes for ANY of the neighbors, return True
 
 
+    }
+
+    public void makeAdjacencyLists(int n){
+        // Calculate # of pegs in board
+        int numPegs = 0;
+        for (int i = 1; i <= n; i++){
+            numPegs += i;
+        }
+        ArrayList<Integer>[] adjLists = new ArrayList[numPegs];
+        // For every peg, calculate all potential neighbors
+        // AKA find adjacency lists for all pegs
+        // This is currently indexing at peg 1 = 1. Try to switch to 0-indexed later!
+        for (int i = 1; i <= numPegs; i++){
+            // Initialize each arraylist in adjLists — referenced Geeksforgeeks for this line
+            adjLists[i] = new ArrayList<Integer>();
+            // Add all possible neighbors to list – 6 possible
+            // calculate offset & row later!!!
+            int offset = 1;
+            int row = 3;
+            if (offset != 0){
+                adjLists[i].add(i - 1);
+
+            }
+            if (offset != 0 || row != 1){
+                adjLists[i].add(i - row);
+            }
+            if (offset != row){
+                adjLists[i].add(i - row + 1);
+                adjLists[i].add(i + 1);
+            }
+            if (row != i){
+                i + row;
+            }
+
+
+
+
+
+        }
     }
 
 
