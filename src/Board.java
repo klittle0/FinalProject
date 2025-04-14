@@ -2,7 +2,10 @@ import java.util.ArrayList;
 
 public class Board {
     // Creates instance of board class
-    public Board() {
+    static int dimension;
+    public Board(int n) {
+        dimension = n;
+    }
     }
 
 
@@ -56,13 +59,6 @@ public class Board {
         // Need to check 2 criteria:
             // There is a neighbor spot that has a peg
             // Right beyond that neighbor peg, there is an empty spot
-        // Track all neighbor pegs —
-        ArrayList<Integer> neighborPegs = new ArrayList<>();
-
-        // First, calculate which row it's in
-        // Find left + right neighbors
-        if
-
 
 
         // Find up + down neighbors
@@ -73,12 +69,27 @@ public class Board {
 
     }
 
+    // Creates adjacency lists for every peg on the board
+    // n represents a given peg #
     public void makeAdjacencyLists(int n){
         // Calculate # of pegs in board
         int numPegs = 0;
-        for (int i = 1; i <= n; i++){
+        for (int i = 1; i <= Board.dimension; i++){
             numPegs += i;
         }
+        // Calculate n's row & offset within the row
+        int row = 0;
+        int offset = 0;
+        int rowMax = 0;
+        for (int i = 1; i <= Board.dimension; i++) {
+            rowMax += i;
+            if (n <= rowMax) {
+                row = i;
+                offset = row - (rowMax - n);
+                break;
+            }
+        }
+
         ArrayList<Integer>[] adjLists = new ArrayList[numPegs];
         // For every peg, calculate all potential neighbors
         // AKA find adjacency lists for all pegs
@@ -87,30 +98,36 @@ public class Board {
             // Initialize each arraylist in adjLists — referenced Geeksforgeeks for this line
             adjLists[i] = new ArrayList<Integer>();
             // Add all possible neighbors to list – 6 possible
-            // calculate offset & row later!!!
-            int offset = 1;
-            int row = 3;
-            if (offset != 0){
-                adjLists[i].add(i - 1);
-
-            }
-            if (offset != 0 || row != 1){
-                adjLists[i].add(i - row);
-            }
-            if (offset != row){
-                adjLists[i].add(i - row + 1);
-                adjLists[i].add(i + 1);
-            }
-            if (row != i){
-                i + row;
-            }
-
-
-
-
+            adjList[] = getNeighbors(i);
 
         }
     }
+
+    public ArrayList<Integer> getNeighbors(int pegNum) {
+        ArrayList<Integer> neighborPegs = new ArrayList<>();
+
+
+        // First, calculate which row it's in
+        // Find left + right neighbors
+        if (offset != 0){
+            adjLists[i].add(i - 1);
+
+        }
+        if (offset != 0 || row != 1){
+            adjLists[i].add(i - row);
+        }
+        if (offset != row){
+            adjLists[i].add(i - row + 1);
+            adjLists[i].add(i + 1);
+        }
+        if (row != i){
+            i + row;
+        }
+
+    }
+
+
+
 
 
 
