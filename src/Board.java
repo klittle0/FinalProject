@@ -1,13 +1,20 @@
-import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Board {
     // Creates instance of board class
     static int dimension;
+    static int numPegs;
+    static int[][] adjLists;
     public Board(int n) {
         dimension = n;
-    }
-    }
 
+        int pegs = 0;
+        for (int i = 1; i <= n; i++){
+            pegs += i;
+        }
+        numPegs = pegs;
+        adjLists = makeAdjacencyLists(numPegs);
+    }
 
     // Returns a long, where each index (either 0 or 1) represents whether a board spot is a legal move
     // Q: SHOULD INPUT BE A STRING BUILDER?
@@ -50,96 +57,89 @@ public class Board {
             int end = currentState.indexOf("1");
             return path;
         }
-
+    return path;
     }
 
     // Returns true if a spot on the board represents a valid move for
     // This method works based on integer indeces, rather than the
-    public Boolean isValid(int spotIndex){
+    public boolean isValid(int spotIndex){
         // Need to check 2 criteria:
             // There is a neighbor spot that has a peg
             // Right beyond that neighbor peg, there is an empty spot
 
 
-        // Find up + down neighbors
-
         // Check to see if there is an empty spot right beyond any of the neighbors
         // If yes for ANY of the neighbors, return True
-
-
+        return true;
     }
 
     // Creates adjacency lists for every peg on the board
-    // n represents a given peg #
-    public void makeAdjacencyLists(int n){
-        // Calculate # of pegs in board
-        int numPegs = 0;
-        for (int i = 1; i <= Board.dimension; i++){
-            numPegs += i;
+    public int[][] makeAdjacencyLists(int numPegs){
+        int[][] adjLists = new int[numPegs + 1][6];
+        // For every peg, find adjacency lists for all neighboring pegs
+        // This is currently indexing at peg 1 = 1. Try to switch to 0-indexed later!
+        for (int i = 1; i <= numPegs; i++){
+            adjLists[i] = getNeighbors(i);
         }
+        return adjLists;
+    }
+
+    // Returns neighbor list for any peg on the board
+    public int[] getNeighbors(int pegNum) {
+        // Max neighbors = 6
+        int[] neighborPegs = new int[6];
+
         // Calculate n's row & offset within the row
         int row = 0;
         int offset = 0;
         int rowMax = 0;
         for (int i = 1; i <= Board.dimension; i++) {
             rowMax += i;
-            if (n <= rowMax) {
+            if (pegNum <= rowMax) {
+                // Row goes from 1 to board.dimension
                 row = i;
-                offset = row - (rowMax - n);
+                // Maybe come up with better formula...Goes from 1 to row width
+                offset = row - (rowMax - pegNum);
                 break;
             }
         }
-
-        ArrayList<Integer>[] adjLists = new ArrayList[numPegs];
-        // For every peg, calculate all potential neighbors
-        // AKA find adjacency lists for all pegs
-        // This is currently indexing at peg 1 = 1. Try to switch to 0-indexed later!
-        for (int i = 1; i <= numPegs; i++){
-            // Initialize each arraylist in adjLists — referenced Geeksforgeeks for this line
-            adjLists[i] = new ArrayList<Integer>();
-            // Add all possible neighbors to list – 6 possible
-            adjList[] = getNeighbors(i);
-
+        // Left neighbor
+        // Up + left diagonal neighbor
+        // DON'T NEED TO ACCOUNT FOR ROW HERE BECAUSE WHEN ROW = 1, OFFSET = 1, SO ROW 1 IS CAPTURED
+        if (offset != 1){
+            neighborPegs[0] = pegNum - 1;
+            neighborPegs[1] = pegNum - row;
         }
-    }
-
-    public ArrayList<Integer> getNeighbors(int pegNum) {
-        ArrayList<Integer> neighborPegs = new ArrayList<>();
-
-
-        // First, calculate which row it's in
-        // Find left + right neighbors
-        if (offset != 0){
-            adjLists[i].add(i - 1);
-
-        }
-        if (offset != 0 || row != 1){
-            adjLists[i].add(i - row);
-        }
+        // Up + right diagonal neighbor
+        // Right neighbor
         if (offset != row){
-            adjLists[i].add(i - row + 1);
-            adjLists[i].add(i + 1);
+            neighborPegs[2] = pegNum - row + 1;
+            neighborPegs[3] = pegNum + 1;
         }
-        if (row != i){
-            i + row;
+        // Bottom right + left neighbors
+        // All pegs except for bottom row have 2 bottom neighbors
+        if (row != Board.dimension) {
+            neighborPegs[4] = pegNum + row + 1;
+            neighborPegs[5] = pegNum + row;
         }
-
+        return neighborPegs;
     }
 
 
+    public static void main(String[] args){
+        Scanner s = new Scanner(System.in);
+        System.out.println("Enter the dimension of your triangle: ");
+        int n = s.nextInt();
+        Board triangle = new Board(n);
 
-
-
-
-    // Is this method even necessary?
-    @Override
-    public String toString() {
-        return "Board{}";
-    }
-
-
-    public static void main(){
-
+        // Should I make adjLists a global variable that belongs to the board? Since it never changes
+        for (int[] each: triangle.adjLists){
+            System.out.print("[");
+            for (int neighbor: each){
+                System.out.print(neighbor);
+            }
+            System.out.println("]");
+        }
     }
 }
 
