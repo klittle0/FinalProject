@@ -82,17 +82,14 @@ public class Board {
     // If a move is valid, this returns the index of the peg's destination
     // If not valid, it returns 0
     // Parameters: any peg index & intended direction of movement
-    public int isValidMove(int spotIndex, int direction){
+    public int isValidMove(int spotIndex, int direction, String boardState){
         // If there's a neighbor peg in the proper direction
         int neighborPeg = Board.adjLists[spotIndex][direction];
-        if (neighborPeg != 0){
-            //System.out.println("found a neighbor of peg " + spotIndex);
-            // If there's an open space one peg past the neighbor
-            // ISSUE: A 0 also means that it's an invalid spot...
-            if (Board.adjLists[neighborPeg][direction] == 0){
-                //System.out.println("found empty spot beyond " + spotIndex);
-                System.out.println("peg # " + spotIndex + " jumps over" + neighborPeg + " into " + Board.adjLists[neighborPeg][direction]);
-                return Board.adjLists[neighborPeg][direction];
+        if (neighborPeg != 0 && neighborPeg != -1){
+            int neighborNeighbor = Board.adjLists[neighborPeg][direction];
+            // If the neighborNeighbor is valid AND there's an open space one peg past the neighbor
+            if (neighborNeighbor > 0 && boardState.charAt(neighborNeighbor - 1) == '0'){
+                return neighborNeighbor;
             }
             return 0;
         }
@@ -107,7 +104,7 @@ public class Board {
             if (currentState.charAt(i) == '1'){
                 // Check all directions in which it could possibly move & see if they're valid
                 for (int j = 0; j < 6; j++){
-                    int destination = isValidMove(i, directions[j]);
+                    int destination = isValidMove(i, directions[j], currentState);
                     if (destination != 0){
                         int[] move = {i, destination};
                         allMoves.add(move);
@@ -154,17 +151,30 @@ public class Board {
             neighborPegs[LEFT] = pegNum - 1;
             neighborPegs[UPLEFT] = pegNum - row;
         }
+        // All "else" cases represent invalid neighbors/spots that don't exist on the board
+        else{
+            neighborPegs[LEFT] = -1;
+            neighborPegs[UPLEFT] = -1;
+        }
         // Up + right diagonal neighbor
         // Right neighbor
         if (offset != row){
             neighborPegs[UPRIGHT] = pegNum - row + 1;
             neighborPegs[RIGHT] = pegNum + 1;
         }
+        else{
+            neighborPegs[UPRIGHT] = -1;
+            neighborPegs[RIGHT] = -1;
+        }
         // Bottom right + left neighbors
         // All pegs except for bottom row have 2 bottom neighbors
         if (row != Board.dimension) {
             neighborPegs[DOWNRIGHT] = pegNum + row + 1;
             neighborPegs[DOWNLEFT] = pegNum + row;
+        }
+        else{
+            neighborPegs[DOWNRIGHT] = -1;
+            neighborPegs[DOWNLEFT] = -1;
         }
         return neighborPegs;
     }
@@ -179,8 +189,7 @@ public class Board {
         // Start state should actually be all 1s. I should first prompt the user to click which peg they want to remove first
         // This is what triggers the program to really start analyzing board states
 
-        String madeUpState = "111111111111110";
-        System.out.println(madeUpState);
+        String madeUpState = "111111111110110";
         ArrayList<int[]> moves = triangle.findAllMoves(madeUpState);
         System.out.println(moves.size());
         for (int[] each: moves){
