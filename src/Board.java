@@ -1,10 +1,18 @@
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Board {
     // Creates instance of board class
     static int dimension;
     static int numPegs;
+    static int[] directions;
     static int[][] adjLists;
+    static final int LEFT = 0;
+    static final int UPLEFT = 1;
+    static final int UPRIGHT = 2;
+    static final int RIGHT = 3;
+    static final int DOWNRIGHT = 4;
+    static final int DOWNLEFT = 5;
     public Board(int n) {
         dimension = n;
 
@@ -14,30 +22,41 @@ public class Board {
         }
         numPegs = pegs;
         adjLists = makeAdjacencyLists(numPegs);
+        // CHECK: is there a better way I can do this??
+        directions = new int[6];
+        directions[0] = LEFT;
+        directions[1] = UPLEFT;
+        directions[2] = UPRIGHT;
+        directions[3] = RIGHT;
+        directions[4] = DOWNRIGHT;
+        directions[5] = DOWNLEFT;
+
     }
 
     // Returns a long, where each index (either 0 or 1) represents whether a board spot is a legal move
     // Q: SHOULD INPUT BE A STRING BUILDER?
-    public StringBuilder legalMoves(String currentState){
-        StringBuilder moves = new StringBuilder();
-
-        // Go through each spot on the board & see if it's a possible move
-        for (int i = 1; i <= currentState.length(); i++){
-            char spot = currentState.charAt(i);
-            // If the spot is empty, there is no valid move
-            if (spot == '0'){
-                moves.append('0');
-            }
-            // Otherwise, check to see if it's valid
-            if (isValid(i)){
-                moves.append('1');
-            }
-            else{
-                moves.append('0');
-            }
-        }
-        return moves;
-    }
+    // IS THIS METHOD EVEN NECESSARY NOW, GIVEN THE OTHERS I'VE MADE??
+//    public StringBuilder legalMoves(String currentState){
+//        StringBuilder moves = new StringBuilder();
+//
+//        // Go through each spot on the board & see if it's a possible move
+//        for (int i = 1; i <= currentState.length(); i++){
+//            char spot = currentState.charAt(i);
+//            // If the spot is empty, there is no valid move
+//            if (spot == '0'){
+//                moves.append('0');
+//            }
+//            // Otherwise, check to see if it has anywhere it can move
+//            // Change this! Make it so that I check each direction
+//            if (isValidMove(i)){
+//                moves.append('1');
+//            }
+//            else{
+//                moves.append('0');
+//            }
+//        }
+//        return moves;
+//    }
 
     // Returns the ideal path to victory, in terms of peg index
     public int[] findSolution(String currentState){
@@ -60,17 +79,43 @@ public class Board {
     return path;
     }
 
-    // Returns true if a spot on the board represents a valid move for
-    // This method works based on integer indeces, rather than the
-    public boolean isValid(int spotIndex){
-        // Need to check 2 criteria:
-            // There is a neighbor spot that has a peg
-            // Right beyond that neighbor peg, there is an empty spot
+    // If a move is valid, this returns the index of the peg's destination
+    // If not valid, it returns 0
+    // Parameters: any peg index & intended direction of movement
+    public int isValidMove(int spotIndex, int direction){
+        // If there's a neighbor peg in the proper direction
+        int neighborPeg = Board.adjLists[spotIndex][direction];
+        if (neighborPeg != 0){
+            //System.out.println("found a neighbor of peg " + spotIndex);
+            // If there's an open space one peg past the neighbor
+            // ISSUE: A 0 also means that it's an invalid spot...
+            if (Board.adjLists[neighborPeg][direction] == 0){
+                //System.out.println("found empty spot beyond " + spotIndex);
+                System.out.println("peg # " + spotIndex + " jumps over" + neighborPeg + " into " + Board.adjLists[neighborPeg][direction]);
+                return Board.adjLists[neighborPeg][direction];
+            }
+            return 0;
+        }
+        return 0;
+    }
 
-
-        // Check to see if there is an empty spot right beyond any of the neighbors
-        // If yes for ANY of the neighbors, return True
-        return true;
+    // Returns list of all possible moves given a current board state (parameter)
+    public ArrayList<int[]> findAllMoves(String currentState){
+        ArrayList<int[]> allMoves = new ArrayList<>();
+        // For every peg on the board (NO EMPTY SPACES)
+        for (int i = 0; i < numPegs; i++){
+            if (currentState.charAt(i) == '1'){
+                // Check all directions in which it could possibly move & see if they're valid
+                for (int j = 0; j < 6; j++){
+                    int destination = isValidMove(i, directions[j]);
+                    if (destination != 0){
+                        int[] move = {i, destination};
+                        allMoves.add(move);
+                    }
+                }
+            }
+        }
+        return allMoves;
     }
 
     // Creates adjacency lists for every peg on the board
@@ -105,22 +150,21 @@ public class Board {
         }
         // Left neighbor
         // Up + left diagonal neighbor
-        // DON'T NEED TO ACCOUNT FOR ROW HERE BECAUSE WHEN ROW = 1, OFFSET = 1, SO ROW 1 IS CAPTURED
         if (offset != 1){
-            neighborPegs[0] = pegNum - 1;
-            neighborPegs[1] = pegNum - row;
+            neighborPegs[LEFT] = pegNum - 1;
+            neighborPegs[UPLEFT] = pegNum - row;
         }
         // Up + right diagonal neighbor
         // Right neighbor
         if (offset != row){
-            neighborPegs[2] = pegNum - row + 1;
-            neighborPegs[3] = pegNum + 1;
+            neighborPegs[UPRIGHT] = pegNum - row + 1;
+            neighborPegs[RIGHT] = pegNum + 1;
         }
         // Bottom right + left neighbors
         // All pegs except for bottom row have 2 bottom neighbors
         if (row != Board.dimension) {
-            neighborPegs[4] = pegNum + row + 1;
-            neighborPegs[5] = pegNum + row;
+            neighborPegs[DOWNRIGHT] = pegNum + row + 1;
+            neighborPegs[DOWNLEFT] = pegNum + row;
         }
         return neighborPegs;
     }
@@ -132,13 +176,18 @@ public class Board {
         int n = s.nextInt();
         Board triangle = new Board(n);
 
-        // Should I make adjLists a global variable that belongs to the board? Since it never changes
-        for (int[] each: triangle.adjLists){
-            System.out.print("[");
-            for (int neighbor: each){
-                System.out.print(neighbor);
-            }
-            System.out.println("]");
+        // Start state should actually be all 1s. I should first prompt the user to click which peg they want to remove first
+        // This is what triggers the program to really start analyzing board states
+
+        String madeUpState = "111111111111110";
+        System.out.println(madeUpState);
+        ArrayList<int[]> moves = triangle.findAllMoves(madeUpState);
+        System.out.println(moves.size());
+        for (int[] each: moves){
+            System.out.print("start peg: ");
+            System.out.println(each[0]);
+            System.out.print("end peg: ");
+            System.out.println(each[1]);
         }
     }
 }
