@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Scanner;
 
 public class Board {
@@ -7,6 +9,9 @@ public class Board {
     static int numPegs;
     static int[] directions;
     static int[][] adjLists;
+    static final int INVALIDMOVE = 0;
+    static final int OFFBOARD = -1;
+    static final int SPACE = 0;
     static final int LEFT = 0;
     static final int UPLEFT = 1;
     static final int UPRIGHT = 2;
@@ -33,31 +38,7 @@ public class Board {
 
     }
 
-    // Returns a long, where each index (either 0 or 1) represents whether a board spot is a legal move
-    // Q: SHOULD INPUT BE A STRING BUILDER?
-    // IS THIS METHOD EVEN NECESSARY NOW, GIVEN THE OTHERS I'VE MADE??
-//    public StringBuilder legalMoves(String currentState){
-//        StringBuilder moves = new StringBuilder();
-//
-//        // Go through each spot on the board & see if it's a possible move
-//        for (int i = 1; i <= currentState.length(); i++){
-//            char spot = currentState.charAt(i);
-//            // If the spot is empty, there is no valid move
-//            if (spot == '0'){
-//                moves.append('0');
-//            }
-//            // Otherwise, check to see if it has anywhere it can move
-//            // Change this! Make it so that I check each direction
-//            if (isValidMove(i)){
-//                moves.append('1');
-//            }
-//            else{
-//                moves.append('0');
-//            }
-//        }
-//        return moves;
-//    }
-
+    // BFS method
     // Returns the ideal path to victory, in terms of peg index
     public int[] findSolution(String currentState){
         // Base case: if only one peg is left
@@ -76,36 +57,61 @@ public class Board {
             int end = currentState.indexOf("1");
             return path;
         }
+
+        // Recursive case: Find all possible moves for the current board
+        Queue<String> toBeVisited = new LinkedList<>();
+        // I need a data structure to keep track of visited — this doesn't work bc it needs to work for strings, not just ints
+        // Should this be numPegs long?! I feel like that works because, from any given peg, there can only be numPegs different board configurations?
+            //Or is this just false??
+        // IS THIS A GOOD APPLICATION FOR HASHING? CONVERTING EVERY BOARD STATE INTO AN INT??
+        boolean[] visited = new boolean[numPegs];
+        toBeVisited.add(currentState);
+        String current = "";
+
+        while (!toBeVisited.isEmpty()){
+            current = toBeVisited.remove();
+            // replace 0 with a hash or some value that corresponds to each board state
+            visited[0] = true;
+
+            //DO I NEED TO INSERT A BASE CASE HERE?!
+
+            ArrayList<int[]> currentMoves = findAllMoves(currentState);
+            for (int[] choice : currentMoves){
+
+            }
+
+        }
+
     return path;
     }
 
+
     // If a move is valid, this returns the index of the peg's destination
-    // If not valid, it returns 0
     // Parameters: any peg index & intended direction of movement
     public int isValidMove(int spotIndex, int direction, String boardState){
         // If there's a neighbor peg in the proper direction
         int neighborPeg = Board.adjLists[spotIndex][direction];
-        if (neighborPeg != 0 && neighborPeg != -1){
+        if (neighborPeg != SPACE && neighborPeg != OFFBOARD){
             int neighborNeighbor = Board.adjLists[neighborPeg][direction];
             // If the neighborNeighbor is valid AND there's an open space one peg past the neighbor
-            if (neighborNeighbor > 0 && boardState.charAt(neighborNeighbor - 1) == '0'){
+            if (neighborNeighbor > INVALIDMOVE && boardState.charAt(neighborNeighbor) == '0'){
                 return neighborNeighbor;
             }
-            return 0;
+            return INVALIDMOVE;
         }
-        return 0;
+        return INVALIDMOVE;
     }
 
     // Returns list of all possible moves given a current board state (parameter)
     public ArrayList<int[]> findAllMoves(String currentState){
         ArrayList<int[]> allMoves = new ArrayList<>();
         // For every peg on the board (NO EMPTY SPACES)
-        for (int i = 0; i < numPegs; i++){
+        for (int i = 1; i <= numPegs; i++){
             if (currentState.charAt(i) == '1'){
                 // Check all directions in which it could possibly move & see if they're valid
-                for (int j = 0; j < 6; j++){
+                for (int j = LEFT; j <= DOWNLEFT; j++){
                     int destination = isValidMove(i, directions[j], currentState);
-                    if (destination != 0){
+                    if (destination != INVALIDMOVE){
                         int[] move = {i, destination};
                         allMoves.add(move);
                     }
@@ -189,15 +195,9 @@ public class Board {
         // Start state should actually be all 1s. I should first prompt the user to click which peg they want to remove first
         // This is what triggers the program to really start analyzing board states
 
-        String madeUpState = "111111111110110";
+        //Later, change this to be 1-indexed
+        String madeUpState = "x111111111111110";
         ArrayList<int[]> moves = triangle.findAllMoves(madeUpState);
-        System.out.println(moves.size());
-        for (int[] each: moves){
-            System.out.print("start peg: ");
-            System.out.println(each[0]);
-            System.out.print("end peg: ");
-            System.out.println(each[1]);
-        }
     }
 }
 
