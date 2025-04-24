@@ -40,44 +40,42 @@ public class Board {
     public ArrayList<int[]> findSolution(String currentState){
         // Referenced ChatGPT for the hashmap idea here, since I was confused about how to keep track
         // of all paths being created simultaneously
-        HashMap<String, int[]> pathMap = new HashMap<>();
+        HashMap<String, ArrayList<int[]>> pathMap = new HashMap<>();
         Queue<String> toBeVisited = new LinkedList<>();
         ArrayList<String> visited = new ArrayList<>();
 
-
         toBeVisited.add(currentState);
+        pathMap.put(currentState, new ArrayList<>());
 
         while (!toBeVisited.isEmpty()){
-
             String current = toBeVisited.remove();
-            // replace 0 with a hash or some value that corresponds to each board state
             visited.add(current);
 
             // Base case: if only one peg is left
             // WHAT SHOULD I ACTUALLY RETURN??
-            // Referenced ChatGPT for this line so I didn't have to use 2 for loops
-            if (currentState.chars().filter(ch -> ch == '1').count() == 1) {
-                return path;
+            // Referenced ChatGPT for this line, so I didn't have to use 2 for loops
+            if (current.chars().filter(ch -> ch == '1').count() == 1){
+                return pathMap.get(current);
             }
 
-            // Recursive case: Find all possible moves for the current board
-            for (int[] move : findAllMoves(currentState)){
-                // Update board state per move
+            // Find all possible moves for the current board
+            for (int[] move : findAllMoves(current)){
+                // Update board state per new move
                 String newState = updateState(currentState, move);
                 // If I haven't visited the new state, mark it to be explored
                 if (!visited.contains(newState)){
                     visited.add(newState);
                     toBeVisited.add(newState);
 
-                    // Add this state to the path
-                    ArrayList<int[]> path = new ArrayList<>();
-                    path.add(move);
-                }
+                    // Update path based on current move & add to path map
+                    ArrayList<int[]> newPath = new ArrayList<>(pathMap.get(current));
+                    newPath.add(move);
+                    pathMap.put(newState, newPath);
             }
 
         }
-        // NEED TO RETURN SOMETHING FOR WHEN THERE'S NO VICTORY!
-    return path;
+        // If there's no solution to victory
+    return new ArrayList<>();
     }
 
     // Updates & returns the currentState based on any given peg movement
@@ -217,4 +215,3 @@ public class Board {
         ArrayList<int[]> moves = triangle.findAllMoves(madeUpState);
     }
 }
-
