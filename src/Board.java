@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Scanner;
+import java.util.*;
 
 public class Board {
     // Creates instance of board class
@@ -40,69 +37,89 @@ public class Board {
 
     // BFS method
     // Returns the ideal path to victory, in terms of peg index
-    public int[] findSolution(String currentState){
-        // Base case: if only one peg is left
-        int[] path = new int[15];
-        int pegCount = 0;
-        for (int i = 0; i < currentState.length(); i++){
-            char spot = currentState.charAt(i);
-            if (spot == '1'){
-                pegCount++;
-            }
-            if (pegCount > 1){
-                break;
-            }
-        }
-        if (pegCount == 1){
-            int end = currentState.indexOf("1");
-            return path;
-        }
-
-        // Recursive case: Find all possible moves for the current board
+    public ArrayList<int[]> findSolution(String currentState){
+        // Referenced ChatGPT for the hashmap idea here, since I was confused about how to keep track
+        // of all paths being created simultaneously
+        HashMap<String, int[]> pathMap = new HashMap<>();
         Queue<String> toBeVisited = new LinkedList<>();
-        // I need a data structure to keep track of visited — this doesn't work bc it needs to work for strings, not just ints
-        // Should this be numPegs long?! I feel like that works because, from any given peg, there can only be numPegs different board configurations?
-            //Or is this just false??
-        // IS THIS A GOOD APPLICATION FOR HASHING? CONVERTING EVERY BOARD STATE INTO AN INT??
-        boolean[] visited = new boolean[numPegs];
+        ArrayList<String> visited = new ArrayList<>();
+
+
         toBeVisited.add(currentState);
-        String current = "";
 
         while (!toBeVisited.isEmpty()){
-            current = toBeVisited.remove();
+
+            String current = toBeVisited.remove();
             // replace 0 with a hash or some value that corresponds to each board state
-            visited[0] = true;
+            visited.add(current);
 
-            //DO I NEED TO INSERT A BASE CASE HERE?!
+            // Base case: if only one peg is left
+            // WHAT SHOULD I ACTUALLY RETURN??
+            // Referenced ChatGPT for this line so I didn't have to use 2 for loops
+            if (currentState.chars().filter(ch -> ch == '1').count() == 1) {
+                return path;
+            }
 
-            ArrayList<int[]> currentMoves = findAllMoves(currentState);
-            for (int[] choice : currentMoves){
+            // Recursive case: Find all possible moves for the current board
+            for (int[] move : findAllMoves(currentState)){
+                // Update board state per move
+                String newState = updateState(currentState, move);
+                // If I haven't visited the new state, mark it to be explored
+                if (!visited.contains(newState)){
+                    visited.add(newState);
+                    toBeVisited.add(newState);
 
+                    // Add this state to the path
+                    ArrayList<int[]> path = new ArrayList<>();
+                    path.add(move);
+                }
             }
 
         }
-
+        // NEED TO RETURN SOMETHING FOR WHEN THERE'S NO VICTORY!
     return path;
     }
 
+    // Updates & returns the currentState based on any given peg movement
+    public String updateState(String currentState, int[] move){
+        int start = move[0];
+        int jumpedPeg = move[1];
+        int end = move[2];
 
-    // If a move is valid, this returns the index of the peg's destination
+        StringBuilder nextState = new StringBuilder(currentState);
+        // Remove peg from start location
+        nextState.setCharAt(start, '0');
+        // Remove the jumped peg
+        nextState.setCharAt(jumpedPeg, '0');
+        // Place the peg at new location
+        nextState.setCharAt(end, '1');
+        String next = nextState.toString();
+        return next;
+    }
+
+
+    // If a move is valid, this returns the index of the jumped peg + current peg's destination
     // Parameters: any peg index & intended direction of movement
-    public int isValidMove(int spotIndex, int direction, String boardState){
+    public int[] isValidMove(int spotIndex, int direction, String boardState){
         // If there's a neighbor peg in the proper direction
         int neighborPeg = Board.adjLists[spotIndex][direction];
         if (neighborPeg != SPACE && neighborPeg != OFFBOARD){
             int neighborNeighbor = Board.adjLists[neighborPeg][direction];
             // If the neighborNeighbor is valid AND there's an open space one peg past the neighbor
             if (neighborNeighbor > INVALIDMOVE && boardState.charAt(neighborNeighbor) == '0'){
-                return neighborNeighbor;
+                int[] bundle = {neighborPeg, neighborNeighbor};
+                return bundle;
             }
-            return INVALIDMOVE;
+            // I do this exact line 2x...can I remove one?
+            int[] bundle = {INVALIDMOVE};
+            return bundle;
         }
-        return INVALIDMOVE;
+        int[] bundle = {INVALIDMOVE};
+        return bundle;
     }
 
     // Returns list of all possible moves given a current board state (parameter)
+    // Each move is formatted w/ index 0 = start value, index 1 = destination
     public ArrayList<int[]> findAllMoves(String currentState){
         ArrayList<int[]> allMoves = new ArrayList<>();
         // For every peg on the board (NO EMPTY SPACES)
@@ -110,9 +127,9 @@ public class Board {
             if (currentState.charAt(i) == '1'){
                 // Check all directions in which it could possibly move & see if they're valid
                 for (int j = LEFT; j <= DOWNLEFT; j++){
-                    int destination = isValidMove(i, directions[j], currentState);
-                    if (destination != INVALIDMOVE){
-                        int[] move = {i, destination};
+                    int[] jumpAndDest = isValidMove(i, directions[j], currentState);
+                    if (jumpAndDest[0] != INVALIDMOVE){
+                        int[] move = {i, jumpAndDest[0], jumpAndDest[1]};
                         allMoves.add(move);
                     }
                 }
