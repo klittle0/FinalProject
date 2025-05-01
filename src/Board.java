@@ -35,47 +35,33 @@ public class Board {
         directions[5] = DOWNLEFT;
     }
 
-    // BFS method
+    // DFS method
     // Returns the ideal path to victory, in terms of peg index
-    public ArrayList<int[]> findSolution(String currentState) {
-        // Referenced ChatGPT for the hashmap idea here, since I was confused about how to keep track
-        // of all paths being created simultaneously
-        ArrayList<int[]> path = new ArrayList<>();
-        Queue<String> toBeVisited = new LinkedList<>();
-        ArrayList<String> visited = new ArrayList<>();
+    public int[] findSolution(String currentState) {
+        Trie path = new Trie();
+        int[] path = new int[];
 
-        toBeVisited.add(currentState);
-        // Should I add this to the path somehow??
-
-        // Should this be the while statement? Or should THIS be where I talk about "while there's more than 1 peg"?
-        while (!toBeVisited.isEmpty()) {
-            String current = toBeVisited.remove();
-            visited.add(current);
-
-            // Base case: if only one peg is left
-            // WHAT SHOULD I ACTUALLY RETURN??
-            // Referenced ChatGPT for this line, so I didn't have to use 2 for loops
-            if (current.chars().filter(ch -> ch == '1').count() == 1) {
-                break;
-            }
-
-            // Find all possible moves for the current board
-            ArrayList<int[]> allMoves = findAllMoves(current);
-            for (int[] move : allMoves) {
-                // Update board state per new move
-                String newState = updateState(currentState, move);
-                // If I haven't visited the new state, mark it to be explored
-                if (!visited.contains(newState)) {
-                    visited.add(newState);
-                    toBeVisited.add(newState);
-
-                    // Update path based on current move & add to path map
-                    path.add(move);
-                }
-            }
-        }
+        // Base case: if only one peg is left
+        // Referenced ChatGPT for this line, so I didn't have to use 2 for loops
+        if (currentState.chars().filter(ch -> ch == '1').count() == 1) {
             return path;
         }
+        // Find all possible moves for the current board — based on first user move
+        ArrayList<int[]> allMoves = findAllMoves(currentState);
+        for (int[] move : allMoves) {
+            // Update board state per new move
+            String newState = updateState(currentState, move);
+            path.insert(newState);
+            // Recurse through every possible state
+            findSolution(newState);
+        }
+
+        //15 possible boards for a complete victory—should I look up all of those & see if I can find any of them?
+        path.lookup()
+        return path;
+
+        // Go through Trie to find the shortest path. Will pick the first shortest path that is found searching
+    }
 
         // Updates & returns the currentState based on any given peg movement
         public String updateState (String currentState,int[] move){
@@ -208,7 +194,10 @@ public class Board {
 
             //Later, change this to be 1-indexed
             String madeUpState = "x111111111111110";
-            ArrayList<int[]> moves = triangle.findAllMoves(madeUpState);
+            System.out.println("What is your first move? Enter a peg #, 1-15");
+            int startPeg = s.nextInt();
+            madeUpState = triangle.updateState(madeUpState, []);
+
             ArrayList<int[]> path = triangle.findSolution(madeUpState);
             for (int[] move: path){
                 System.out.println("Go from " + move[0] + ", jump over " + move[1] + " to reach " + move[2]);
