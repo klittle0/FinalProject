@@ -1,3 +1,6 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 public class Board {
@@ -35,32 +38,55 @@ public class Board {
         directions[5] = DOWNLEFT;
     }
 
-    // DFS method
-    // Returns the ideal path to victory, in terms of peg index
-    public int[] findSolution(String currentState) {
-        Trie path = new Trie();
-        int[] path = new int[];
-
-        // Base case: if only one peg is left
-        // Referenced ChatGPT for this line, so I didn't have to use 2 for loops
-        if (currentState.chars().filter(ch -> ch == '1').count() == 1) {
-            return path;
+    // For every possible starting move, write its succeeding board states to their own file
+    // This way, the board states for removing peg 1 will be separate from when the user removes peg 7.
+    public void writeBoardStates(String currentState){
+        for (int i = 1; i <= numPegs; i++) {
+            StringBuilder state = new StringBuilder(currentState);
+            // Removes peg i
+            state.setCharAt(i, '0');
+            String fileName = "peg" + i + ".txt";
+            System.out.println("Writing states for starting with peg removed: " + i);
+            writeBoardStatesHelper(state.toString(), fileName);
         }
-        // Find all possible moves for the current board — based on first user move
-        ArrayList<int[]> allMoves = findAllMoves(currentState);
-        for (int[] move : allMoves) {
-            // Update board state per new move
-            String newState = updateState(currentState, move);
-            path.insert(newState);
-            // Recurse through every possible state
-            findSolution(newState);
+    }
+
+    // Finds every possible board state & corresponding move. Writes these to a file
+    public void writeBoardStatesHelper(String currentState, String file){
+        Queue<String> queue = new LinkedList<>();
+        // Why a hashset here?
+        Set<String> visited = new HashSet<>();
+
+        // Referenced ChatGPT for this line to write to a file
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            queue.add(currentState);
+            visited.add(currentState);
+
+            writer.write("Current state     / next state     / start peg / jumped peg / final peg");
+            writer.newLine();
+
+            while (!queue.isEmpty()) {
+                String current = queue.remove();
+
+                // For every possible move given the current board state, find future moves
+                for (int[] move : findAllMoves(current)) {
+                    String nextState = updateState(current, move);
+                    if (!visited.contains(nextState)) {
+                        queue.add(nextState);
+                        visited.add(nextState);
+                    }
+
+                    // Writes to my file in this form: currentState nextState moveStart moveJumped moveEnd
+                    writer.write(current + " " + nextState + " " + move[0] + " " + move[1] + " " + move[2]);
+                    writer.newLine();
+                }
+            }
+            System.out.println("All moves saved to " + file);
+
+            // Referenced Geeks for Geeks for this exception
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
         }
-
-        //15 possible boards for a complete victory—should I look up all of those & see if I can find any of them?
-        path.lookup()
-        return path;
-
-        // Go through Trie to find the shortest path. Will pick the first shortest path that is found searching
     }
 
         // Updates & returns the currentState based on any given peg movement
@@ -101,7 +127,7 @@ public class Board {
         }
 
         // Returns list of all possible moves given a current board state (parameter)
-        // Each move is formatted w/ index 0 = start value, index 1 = destination
+        // Each move is formatted w/ index 0 = start value, index 1 = peg jumped over, index 2 = destination
         public ArrayList<int[]> findAllMoves (String currentState){
             ArrayList<int[]> allMoves = new ArrayList<>();
             // For every peg on the board (NO EMPTY SPACES)
@@ -193,14 +219,13 @@ public class Board {
             // This is what triggers the program to really start analyzing board states
 
             //Later, change this to be 1-indexed
-            String madeUpState = "x111111111111110";
+            String madeUpState = "x111111111111111";
+            triangle.writeBoardStates(madeUpState);
             System.out.println("What is your first move? Enter a peg #, 1-15");
             int startPeg = s.nextInt();
-            madeUpState = triangle.updateState(madeUpState, []);
 
-            ArrayList<int[]> path = triangle.findSolution(madeUpState);
-            for (int[] move: path){
-                System.out.println("Go from " + move[0] + ", jump over " + move[1] + " to reach " + move[2]);
-            }
+//            for (int[] move: path){
+//                System.out.println("Go from " + move[0] + ", jump over " + move[1] + " to reach " + move[2]);
+//            }
         }
     }
