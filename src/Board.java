@@ -215,6 +215,24 @@ public class Board {
             return neighborPegs;
         }
 
+        // Referenced ChatGPT to create this method
+        // Imports only the file necessary for the user's start peg
+        public void importFile(int startPeg){
+            String filename = "peg" + startPeg + ".txt";
+            List<String> fileContents = new ArrayList<>();
+
+            try (Scanner fileScanner = new Scanner(new java.io.File(filename))) {
+                while (fileScanner.hasNextLine()) {
+                    fileContents.add(fileScanner.nextLine());
+                }
+                System.out.println("Imported file " + filename + " with " + fileContents.size() + " lines.");
+            } catch (IOException e) {
+                System.err.println("Failed to read file: " + filename);
+                e.printStackTrace();
+                return;
+            }
+        }
+
 
         public static void main (String[] args){
             Scanner s = new Scanner(System.in);
@@ -227,23 +245,26 @@ public class Board {
 
             //Later, change this to be 1-indexed
             // ALS0, THIS MUST BE THE LENGTH OF NUM PEGS FOR THIS BOARD SIZE!!
-            StringBuilder startState = new StringBuilder('x');
+            StringBuilder startState = new StringBuilder("x");
             for (int i = 0; i < numPegs; i++){
                 startState.append('1');
             }
-            // I CHANGED THIS TO UPDATE DEPENDING ON N, BUT IT'S NOW GIVING ME AN ERROR
+
             String current = String.valueOf(startState);
             triangle.writeBoardStates(current);
             System.out.println("What is your first move? Enter a peg #, 1-" + numPegs);
             int startPeg = s.nextInt();
-            ArrayList<int[]> possibleStates = triangle.findAllMoves("x101011111111111");
+
+            // Update the board to reflect new start peg
+            startState.setCharAt(startPeg, '0');
+            current = String.valueOf(startState);
+
+            // Import necessary file into memory
+
+
+            ArrayList<int[]> possibleStates = triangle.findAllMoves(current);
             for (int[] each : possibleStates){
                 System.out.println(each[0] + " over " + each[1] + " to " + each[2]);
             }
-
-
-//            for (int[] move: path){
-//                System.out.println("Go from " + move[0] + ", jump over " + move[1] + " to reach " + move[2]);
-//            }
         }
     }
