@@ -11,7 +11,7 @@ public class Board {
     static int[][] adjLists;
     static final int INVALIDMOVE = 0;
     static final int OFFBOARD = -1;
-    static final int SPACE = 0;
+    static final char SPACE = '0';
     static final int LEFT = 0;
     static final int UPLEFT = 1;
     static final int UPRIGHT = 2;
@@ -41,12 +41,12 @@ public class Board {
     // For every possible starting move, write its succeeding board states to their own file
     // This way, the board states for removing peg 1 will be separate from when the user removes peg 7.
     public void writeBoardStates(String currentState){
+        // Update 3 to numPegs after debugging
         for (int i = 1; i <= numPegs; i++) {
             StringBuilder state = new StringBuilder(currentState);
             // Removes peg i
             state.setCharAt(i, '0');
             String fileName = "peg" + i + ".txt";
-            System.out.println("Writing states for starting with peg removed: " + i);
             writeBoardStatesHelper(state.toString(), fileName);
         }
     }
@@ -95,6 +95,7 @@ public class Board {
             int jumpedPeg = move[1];
             int end = move[2];
 
+
             StringBuilder nextState = new StringBuilder(currentState);
             // Remove peg from start location
             nextState.setCharAt(start, '0');
@@ -103,6 +104,8 @@ public class Board {
             // Place the peg at new location
             nextState.setCharAt(end, '1');
             String next = nextState.toString();
+
+            // Do I need to update the adjacency lists here?
             return next;
         }
 
@@ -111,16 +114,18 @@ public class Board {
         public int[] isValidMove (int spotIndex, int direction, String boardState){
             // If there's a neighbor peg in the proper direction
             int neighborPeg = Board.adjLists[spotIndex][direction];
-            if (neighborPeg != SPACE && neighborPeg != OFFBOARD) {
-                int neighborNeighbor = Board.adjLists[neighborPeg][direction];
-                // If the neighborNeighbor is valid AND there's an open space one peg past the neighbor
-                if (neighborNeighbor > INVALIDMOVE && boardState.charAt(neighborNeighbor) == '0') {
-                    int[] bundle = {neighborPeg, neighborNeighbor};
+            if (neighborPeg != OFFBOARD) {
+                if (boardState.charAt(neighborPeg) != SPACE){
+                    int neighborNeighbor = Board.adjLists[neighborPeg][direction];
+                    // If the neighborNeighbor is valid AND there's an open space one peg past the neighbor
+                    if (neighborNeighbor > INVALIDMOVE && boardState.charAt(neighborNeighbor) == '0') {
+                        int[] bundle = {neighborPeg, neighborNeighbor};
+                        return bundle;
+                    }
+                    // I do this exact line 2x...can I remove one?
+                    int[] bundle = {INVALIDMOVE};
                     return bundle;
                 }
-                // I do this exact line 2x...can I remove one?
-                int[] bundle = {INVALIDMOVE};
-                return bundle;
             }
             int[] bundle = {INVALIDMOVE};
             return bundle;
@@ -129,6 +134,7 @@ public class Board {
         // Returns list of all possible moves given a current board state (parameter)
         // Each move is formatted w/ index 0 = start value, index 1 = peg jumped over, index 2 = destination
         public ArrayList<int[]> findAllMoves (String currentState){
+
             ArrayList<int[]> allMoves = new ArrayList<>();
             // For every peg on the board (NO EMPTY SPACES)
             for (int i = 1; i <= numPegs; i++) {
@@ -158,6 +164,7 @@ public class Board {
         }
 
         // Returns neighbor list for any peg on the board
+        // Doesn't account for spaces! Just lists the peg # where there could possibly be a neighbor at any point
         public int[] getNeighbors (int pegNum){
             // Max neighbors = 6
             int[] neighborPegs = new int[6];
@@ -219,10 +226,21 @@ public class Board {
             // This is what triggers the program to really start analyzing board states
 
             //Later, change this to be 1-indexed
-            String madeUpState = "x111111111111111";
-            triangle.writeBoardStates(madeUpState);
-            System.out.println("What is your first move? Enter a peg #, 1-15");
+            // ALS0, THIS MUST BE THE LENGTH OF NUM PEGS FOR THIS BOARD SIZE!!
+            StringBuilder startState = new StringBuilder('x');
+            for (int i = 0; i < numPegs; i++){
+                startState.append('1');
+            }
+            // I CHANGED THIS TO UPDATE DEPENDING ON N, BUT IT'S NOW GIVING ME AN ERROR
+            String current = String.valueOf(startState);
+            triangle.writeBoardStates(current);
+            System.out.println("What is your first move? Enter a peg #, 1-" + numPegs);
             int startPeg = s.nextInt();
+            ArrayList<int[]> possibleStates = triangle.findAllMoves("x101011111111111");
+            for (int[] each : possibleStates){
+                System.out.println(each[0] + " over " + each[1] + " to " + each[2]);
+            }
+
 
 //            for (int[] move: path){
 //                System.out.println("Go from " + move[0] + ", jump over " + move[1] + " to reach " + move[2]);
