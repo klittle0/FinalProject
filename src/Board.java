@@ -38,55 +38,62 @@ public class Board {
         directions[5] = DOWNLEFT;
     }
 
-    // For every possible starting move, write its succeeding board states to their own file
-    // This way, the board states for removing peg 1 will be separate from when the user removes peg 7.
-    public void writeBoardStates(String currentState){
-        // Update 3 to numPegs after debugging
-        for (int i = 1; i <= numPegs; i++) {
-            StringBuilder state = new StringBuilder(currentState);
-            // Removes peg i
-            state.setCharAt(i, '0');
-            String fileName = "peg" + i + ".txt";
-            writeBoardStatesHelper(state.toString(), fileName);
+
+    // Returns the # of pegs left in any given board state
+    public int countPegs(String boardState){
+        int count = 0;
+        for (int i = 0; i < boardState.length(); i++){
+            if (boardState.charAt(i) == '1'){
+                count++;
+            }
         }
+        return count;
     }
 
-    // Finds every possible board state & corresponding move. Writes these to a file
-    public void writeBoardStatesHelper(String currentState, String file){
+    // Finds every possible board state & corresponding move. Once path is complete, retraces the shortest winning path
+    public ArrayList<Move> findWinningPath(String currentState, String startState){
         Queue<String> queue = new LinkedList<>();
         // Why a hashset here?
         Set<String> visited = new HashSet<>();
+        Map<String, Move> cameFromMove = new HashMap<>();
 
-        // Referenced ChatGPT for this line to write to a file
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            queue.add(currentState);
-            visited.add(currentState);
 
-            writer.write("Current state     / next state     / start peg / jumped peg / final peg");
-            writer.newLine();
+        queue.add(startState);
+        visited.add(startState);
+
+        // I will change this as soon as winning board state is found.
+        // That way I have a starting point to make my winning path
+        String winningState = null;
 
             while (!queue.isEmpty()) {
                 String current = queue.remove();
 
-                // For every possible move given the current board state, find future moves
-                for (int[] move : findAllMoves(current)) {
-                    String nextState = updateState(current, move);
-                    if (!visited.contains(nextState)) {
-                        queue.add(nextState);
-                        visited.add(nextState);
-                    }
+                // Base case: if only 1 peg remains on the board
+                if (countPegs(current) == 1) {
+                    winningState = current;
+                    break;
+                }
 
-                    // Writes to my file in this form: currentState nextState moveStart moveJumped moveEnd
-                    writer.write(current + " " + nextState + " " + move[0] + " " + move[1] + " " + move[2]);
-                    writer.newLine();
+                // For every possible move given the current board state, find future moves
+                for (Move nextMove : findAllMoves(current)) {
+                    String nextState = nextMove.currentState;
+
+                    if (!visited.contains(nextState)) {
+                        visited.add(nextState);
+                        queue.add(nextState);
+                        cameFromMove.put(nextState, nextMove);
+                    }
                 }
             }
-            System.out.println("All moves saved to " + file);
+            if (winningState == null){
+                ArrayList<Move> noWinningPath = new ArrayList<>();
+                return noWinningPath;
+            }
 
-            // Referenced Geeks for Geeks for this exception
-        } catch (IOException e) {
-            System.err.println("Error writing to file: " + e.getMessage());
-        }
+            //Otherwise, trace the moves upward from victory point to find the winning path
+
+
+
     }
 
         // Updates & returns the currentState based on any given peg movement
@@ -132,18 +139,20 @@ public class Board {
         }
 
         // Returns list of all possible moves given a current board state (parameter)
-        // Each move is formatted w/ index 0 = start value, index 1 = peg jumped over, index 2 = destination
-        public ArrayList<int[]> findAllMoves (String currentState){
-
-            ArrayList<int[]> allMoves = new ArrayList<>();
+        public ArrayList<Move> findAllMoves (String currentState){
+            ArrayList<Move> allMoves = new ArrayList<>();
             // For every peg on the board (NO EMPTY SPACES)
             for (int i = 1; i <= numPegs; i++) {
                 if (currentState.charAt(i) == '1') {
                     // Check all directions in which it could possibly move & see if they're valid
                     for (int j = LEFT; j <= DOWNLEFT; j++) {
                         int[] jumpAndDest = isValidMove(i, directions[j], currentState);
-                        if (jumpAndDest[0] != INVALIDMOVE) {
-                            int[] move = {i, jumpAndDest[0], jumpAndDest[1]};
+                        int start = i;
+                        int jumped = jumpAndDest[0];
+                        int end = jumpAndDest[1];
+                        if (jumped != INVALIDMOVE) {
+                            String nextState = updateState(currentState, new int[]{start, jumped, end});
+                            Move move = new Move(i, jumpAndDest[0], jumpAndDest[1], nextState, currentState);
                             allMoves.add(move);
                         }
                     }
@@ -250,21 +259,17 @@ public class Board {
                 startState.append('1');
             }
 
-            String current = String.valueOf(startState);
-            triangle.writeBoardStates(current);
             System.out.println("What is your first move? Enter a peg #, 1-" + numPegs);
             int startPeg = s.nextInt();
+            String startBoard = String.valueOf(startState);
 
             // Update the board to reflect new start peg
             startState.setCharAt(startPeg, '0');
-            current = String.valueOf(startState);
+            String current = String.valueOf(startState);
+            // Find all possible states that stem from the player's 1st move
+            triangle.findWinningPath(current, startBoard);
 
-            // Import necessary file into memory
+            // Import necessary file into memory based on start peg 
 
-
-            ArrayList<int[]> possibleStates = triangle.findAllMoves(current);
-            for (int[] each : possibleStates){
-                System.out.println(each[0] + " over " + each[1] + " to " + each[2]);
-            }
         }
     }
