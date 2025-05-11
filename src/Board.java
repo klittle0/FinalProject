@@ -48,6 +48,33 @@ public class Board {
         return count;
     }
 
+    // Returns the winning board that is a result of the shortest path to the strongest victory
+    public String findWinningBoard(Map<Integer, String> allWinningStates, Map<String, Move> cameFromMove){
+        String winningState = null;
+        for (int pegCount = 1; pegCount <= 3; pegCount++) {
+            // If a state with the current peg count exists
+            if (allWinningStates.containsKey(pegCount)) {
+
+                // Iterate through cameFromMove to find the state with the fewest numMoves
+                int currentMinMoves = Integer.MAX_VALUE;
+
+                // Iterate through the cameFromMove map to find the state with the fewest moves that has the current peg count
+                for (Map.Entry<String, Move> entry : cameFromMove.entrySet()) {
+                    String state = entry.getKey();
+                    Move move = entry.getValue();
+
+                    // Only consider states that are winning states & that have right peg count
+                    if (allWinningStates.containsValue(state) && allWinningStates.get(pegCount).equals(state)) {
+                        if (move.numMoves < currentMinMoves) {
+                            winningState = state;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return winningState;
+    }
     // Finds every possible board state & corresponding move. Once path is complete, retraces the shortest winning path
     public ArrayList<Move> findWinningPath(String currentState, String startState){
         Queue<String> queue = new LinkedList<>();
@@ -56,63 +83,63 @@ public class Board {
         Map<Integer, String> allWinningStates = new HashMap<>();
 
         queue.add(currentState);
-        System.out.println("added to queue: " + currentState);
         visited.add(currentState);
+        cameFromMove.put(currentState, new Move(-1, -1, -1, currentState, null, 0));
 
         while (!queue.isEmpty()) {
             String current = queue.remove();
             int pegCount = countPegs(current);
 
-            System.out.println("initial peg count: " + pegCount);
-
             // Base case: if only 1 peg remains on the board
             if (pegCount == 1) {
                 allWinningStates.put(pegCount, current);
-                System.out.println("found winning board: " + current);
-                break;
             }
             // Next best: 2 pegs left
             else if(pegCount == 2){
                 allWinningStates.put(pegCount, current);
-                System.out.println("found winning board: " + current);
             }
             // Next best: 3 pegs left
             else if(pegCount == 3){
                 allWinningStates.put(pegCount, current);
-                System.out.println("found winning board: " + current);
             }
 
             // For every possible move given the current board state, find future moves
-            for (Move nextMove : findAllMoves(current)) {
+            for (Move nextMove : findAllMoves(current, cameFromMove.get(current).numMoves)) {
                 String nextState = nextMove.currentState;
 
                 if (!visited.contains(nextState)) {
                     visited.add(nextState);
                     queue.add(nextState);
+                    // Correct thing to do??
+                    nextMove.incrementNumMoves();
                     cameFromMove.put(nextState, nextMove);
                 }
             }
         }
-        // Referenced ChatGPT for this line to find the best existing winning state. Null if no winning state is achieved
-        String winningState = allWinningStates.getOrDefault(1, allWinningStates.getOrDefault(2, allWinningStates.get(3)));
+
         // If no victory is found
-        if (winningState == null){
-            ArrayList<Move> noWinningPath = new ArrayList<>();
-            return noWinningPath;
+        if (allWinningStates.isEmpty()){
+            return new ArrayList<>();
         }
         //Otherwise, trace the moves upward from victory point to find the winning path
         ArrayList<Move> bestPath = new ArrayList<>();
-        String current = winningState;
+        String current = findWinningBoard(allWinningStates, cameFromMove);
 
-        while (!current.equals(startState)) {
+        while (current != null && !current.equals(startState)) {
             Move move = cameFromMove.get(current);
-            if (move == null){
+            if (move.oldState == null){
                 break;
             }
             bestPath.add(move);
             current = move.oldState;
         }
         Collections.reverse(bestPath);
+
+        // TEST
+        for (String each: allWinningStates.values()){
+            System.out.println("Num moves to victory: " + cameFromMove.get(each).numMoves);
+        }
+
         return bestPath;
     }
 
@@ -121,7 +148,6 @@ public class Board {
             int start = move[0];
             int jumpedPeg = move[1];
             int end = move[2];
-
 
             StringBuilder nextState = new StringBuilder(currentState);
             // Remove peg from start location
@@ -159,7 +185,7 @@ public class Board {
         }
 
         // Returns list of all possible moves given a current board state (parameter)
-        public ArrayList<Move> findAllMoves (String currentState){
+        public ArrayList<Move> findAllMoves (String currentState, int moveDepth){
             ArrayList<Move> allMoves = new ArrayList<>();
             // For every peg on the board (NO EMPTY SPACES)
             for (int i = 1; i <= numPegs; i++) {
@@ -172,7 +198,7 @@ public class Board {
                         if (jumped != INVALIDMOVE) {
                             int end = jumpAndDest[1];
                             String nextState = updateState(currentState, new int[]{start, jumped, end});
-                            Move move = new Move(i, jumpAndDest[0], jumpAndDest[1], nextState, currentState);
+                            Move move = new Move(i, jumpAndDest[0], jumpAndDest[1], nextState, currentState, moveDepth);
                             allMoves.add(move);
                         }
                     }
@@ -287,6 +313,5 @@ public class Board {
             for (Move each : path){
                 System.out.println(each.start + " over " + each.jumped + " to " + each.end);
             }
-
         }
     }
