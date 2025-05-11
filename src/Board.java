@@ -1,5 +1,3 @@
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -53,47 +51,69 @@ public class Board {
     // Finds every possible board state & corresponding move. Once path is complete, retraces the shortest winning path
     public ArrayList<Move> findWinningPath(String currentState, String startState){
         Queue<String> queue = new LinkedList<>();
-        // Why a hashset here?
         Set<String> visited = new HashSet<>();
         Map<String, Move> cameFromMove = new HashMap<>();
+        Map<Integer, String> allWinningStates = new HashMap<>();
 
+        queue.add(currentState);
+        System.out.println("added to queue: " + currentState);
+        visited.add(currentState);
 
-        queue.add(startState);
-        visited.add(startState);
+        while (!queue.isEmpty()) {
+            String current = queue.remove();
+            int pegCount = countPegs(current);
 
-        // I will change this as soon as winning board state is found.
-        // That way I have a starting point to make my winning path
-        String winningState = null;
+            System.out.println("initial peg count: " + pegCount);
 
-            while (!queue.isEmpty()) {
-                String current = queue.remove();
-
-                // Base case: if only 1 peg remains on the board
-                if (countPegs(current) == 1) {
-                    winningState = current;
-                    break;
-                }
-
-                // For every possible move given the current board state, find future moves
-                for (Move nextMove : findAllMoves(current)) {
-                    String nextState = nextMove.currentState;
-
-                    if (!visited.contains(nextState)) {
-                        visited.add(nextState);
-                        queue.add(nextState);
-                        cameFromMove.put(nextState, nextMove);
-                    }
-                }
+            // Base case: if only 1 peg remains on the board
+            if (pegCount == 1) {
+                allWinningStates.put(pegCount, current);
+                System.out.println("found winning board: " + current);
+                break;
             }
-            if (winningState == null){
-                ArrayList<Move> noWinningPath = new ArrayList<>();
-                return noWinningPath;
+            // Next best: 2 pegs left
+            else if(pegCount == 2){
+                allWinningStates.put(pegCount, current);
+                System.out.println("found winning board: " + current);
+            }
+            // Next best: 3 pegs left
+            else if(pegCount == 3){
+                allWinningStates.put(pegCount, current);
+                System.out.println("found winning board: " + current);
             }
 
-            //Otherwise, trace the moves upward from victory point to find the winning path
+            // For every possible move given the current board state, find future moves
+            for (Move nextMove : findAllMoves(current)) {
+                String nextState = nextMove.currentState;
 
+                if (!visited.contains(nextState)) {
+                    visited.add(nextState);
+                    queue.add(nextState);
+                    cameFromMove.put(nextState, nextMove);
+                }
+            }
+        }
+        // Referenced ChatGPT for this line to find the best existing winning state. Null if no winning state is achieved
+        String winningState = allWinningStates.getOrDefault(1, allWinningStates.getOrDefault(2, allWinningStates.get(3)));
+        // If no victory is found
+        if (winningState == null){
+            ArrayList<Move> noWinningPath = new ArrayList<>();
+            return noWinningPath;
+        }
+        //Otherwise, trace the moves upward from victory point to find the winning path
+        ArrayList<Move> bestPath = new ArrayList<>();
+        String current = winningState;
 
-
+        while (!current.equals(startState)) {
+            Move move = cameFromMove.get(current);
+            if (move == null){
+                break;
+            }
+            bestPath.add(move);
+            current = move.oldState;
+        }
+        Collections.reverse(bestPath);
+        return bestPath;
     }
 
         // Updates & returns the currentState based on any given peg movement
@@ -149,8 +169,8 @@ public class Board {
                         int[] jumpAndDest = isValidMove(i, directions[j], currentState);
                         int start = i;
                         int jumped = jumpAndDest[0];
-                        int end = jumpAndDest[1];
                         if (jumped != INVALIDMOVE) {
+                            int end = jumpAndDest[1];
                             String nextState = updateState(currentState, new int[]{start, jumped, end});
                             Move move = new Move(i, jumpAndDest[0], jumpAndDest[1], nextState, currentState);
                             allMoves.add(move);
@@ -249,11 +269,7 @@ public class Board {
             int n = s.nextInt();
             Board triangle = new Board(n);
 
-            // Start state should actually be all 1s. I should first prompt the user to click which peg they want to remove first
-            // This is what triggers the program to really start analyzing board states
-
-            //Later, change this to be 1-indexed
-            // ALS0, THIS MUST BE THE LENGTH OF NUM PEGS FOR THIS BOARD SIZE!!
+            //Later, change this to be 0-indexed
             StringBuilder startState = new StringBuilder("x");
             for (int i = 0; i < numPegs; i++){
                 startState.append('1');
@@ -267,9 +283,10 @@ public class Board {
             startState.setCharAt(startPeg, '0');
             String current = String.valueOf(startState);
             // Find all possible states that stem from the player's 1st move
-            triangle.findWinningPath(current, startBoard);
-
-            // Import necessary file into memory based on start peg 
+            ArrayList<Move> path = triangle.findWinningPath(current, startBoard);
+            for (Move each : path){
+                System.out.println(each.start + " over " + each.jumped + " to " + each.end);
+            }
 
         }
     }
