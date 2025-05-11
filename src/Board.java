@@ -6,6 +6,8 @@ public class Board {
     static int dimension;
     static int numPegs;
     static int[] directions;
+    public Map<Integer, String> allWinningStates;
+    public Map<String, Move> cameFromMove;
     static int[][] adjLists;
     static final int INVALIDMOVE = 0;
     static final int OFFBOARD = -1;
@@ -36,7 +38,6 @@ public class Board {
         directions[5] = DOWNLEFT;
     }
 
-
     // Returns the # of pegs left in any given board state
     public int countPegs(String boardState){
         int count = 0;
@@ -51,36 +52,31 @@ public class Board {
     // Returns the winning board that is a result of the shortest path to the strongest victory
     public String findWinningBoard(Map<Integer, String> allWinningStates, Map<String, Move> cameFromMove){
         String winningState = null;
+        int currentMinMoves = Integer.MAX_VALUE;
         for (int pegCount = 1; pegCount <= 3; pegCount++) {
-            // If a state with the current peg count exists
-            if (allWinningStates.containsKey(pegCount)) {
-
-                // Iterate through cameFromMove to find the state with the fewest numMoves
-                int currentMinMoves = Integer.MAX_VALUE;
-
                 // Iterate through the cameFromMove map to find the state with the fewest moves that has the current peg count
-                for (Map.Entry<String, Move> entry : cameFromMove.entrySet()) {
-                    String state = entry.getKey();
-                    Move move = entry.getValue();
+                for (Map.Entry<String, Move> each : cameFromMove.entrySet()) {
+                    String state = each.getKey();
+                    Move move = each.getValue();
+                    int count = countPegs(state);
 
                     // Only consider states that are winning states & that have right peg count
-                    if (allWinningStates.containsValue(state) && allWinningStates.get(pegCount).equals(state)) {
+                    if (count == pegCount && allWinningStates.containsValue(state) && allWinningStates.get(pegCount).equals(state)) {
                         if (move.numMoves < currentMinMoves) {
                             winningState = state;
-                            break;
                         }
                     }
                 }
+                if (winningState != null) break;
             }
-        }
         return winningState;
     }
     // Finds every possible board state & corresponding move. Once path is complete, retraces the shortest winning path
     public ArrayList<Move> findWinningPath(String currentState, String startState){
         Queue<String> queue = new LinkedList<>();
         Set<String> visited = new HashSet<>();
-        Map<String, Move> cameFromMove = new HashMap<>();
-        Map<Integer, String> allWinningStates = new HashMap<>();
+        cameFromMove = new HashMap<>();
+        allWinningStates = new HashMap<>();
 
         queue.add(currentState);
         visited.add(currentState);
@@ -134,11 +130,6 @@ public class Board {
             current = move.oldState;
         }
         Collections.reverse(bestPath);
-
-        // TEST
-        for (String each: allWinningStates.values()){
-            System.out.println("Num moves to victory: " + cameFromMove.get(each).numMoves);
-        }
 
         return bestPath;
     }
@@ -270,32 +261,15 @@ public class Board {
             return neighborPegs;
         }
 
-        // Referenced ChatGPT to create this method
-        // Imports only the file necessary for the user's start peg
-        public void importFile(int startPeg){
-            String filename = "peg" + startPeg + ".txt";
-            List<String> fileContents = new ArrayList<>();
-
-            try (Scanner fileScanner = new Scanner(new java.io.File(filename))) {
-                while (fileScanner.hasNextLine()) {
-                    fileContents.add(fileScanner.nextLine());
-                }
-                System.out.println("Imported file " + filename + " with " + fileContents.size() + " lines.");
-            } catch (IOException e) {
-                System.err.println("Failed to read file: " + filename);
-                e.printStackTrace();
-                return;
-            }
-        }
-
 
         public static void main (String[] args){
             Scanner s = new Scanner(System.in);
-            System.out.println("Enter the dimension of your triangle: ");
+            System.out.println("What are the dimensions of your triangle? Enter a number, 3-6: ");
             int n = s.nextInt();
             Board triangle = new Board(n);
 
             //Later, change this to be 0-indexed
+            // Construct start board where every spot is filled
             StringBuilder startState = new StringBuilder("x");
             for (int i = 0; i < numPegs; i++){
                 startState.append('1');
@@ -305,13 +279,42 @@ public class Board {
             int startPeg = s.nextInt();
             String startBoard = String.valueOf(startState);
 
-            // Update the board to reflect new start peg
+            // Update the board to reflect user's first move
             startState.setCharAt(startPeg, '0');
             String current = String.valueOf(startState);
-            // Find all possible states that stem from the player's 1st move
-            ArrayList<Move> path = triangle.findWinningPath(current, startBoard);
-            for (Move each : path){
-                System.out.println(each.start + " over " + each.jumped + " to " + each.end);
+
+            while (true){
+                // Finds the best path to victory that stems from the player's 1st move
+                ArrayList<Move> path = triangle.findWinningPath(current, startBoard);
+
+            }
+
+
+            Move ideal = path.get(0);
+            System.out.println("Optimal move from this position: ");
+            System.out.println("Move " + ideal.start + " over " + ideal.jumped + " into empty spot " + ideal.end);
+            s.nextLine();
+            System.out.println("Would you like to make this move? Y or N");
+            // Why trim here??
+            String status = s.nextLine().trim();
+            if (status.equals("Y") || status.equals("y")){
+                current = triangle.updateState(current, new int[]{ideal.start, ideal.jumped, ideal.end});
+                System.out.println("updated board w/ ideal move.");
+            }
+            else{
+                System.out.println("Enter your desired move in the following format: # over # to #");
+                String[] move = s.nextLine().trim().split(" ");
+                if (move.length == 5){
+                    int start = Integer.parseInt(move[0]);
+                    int jumped = Integer.parseInt(move[2]);
+                    int end = Integer.parseInt(move[4]);
+                    // ADD CHECK FOR INVALID MOVES
+                    current = triangle.updateState(current, new int[]{start, jumped, end});
+                    System.out.println("updated w/ custom move");
+                }
+                else{
+                    System.out.println("Invalid format");
+                }
             }
         }
     }
