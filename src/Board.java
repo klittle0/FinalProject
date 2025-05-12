@@ -1,10 +1,10 @@
-import java.io.IOException;
 import java.util.*;
 
 public class Board {
     // Creates instance of board class
     static int dimension;
     static int numPegs;
+    static String winningState;
     static int[] directions;
     public Map<Integer, String> allWinningStates;
     public Map<String, Move> cameFromMove;
@@ -51,7 +51,7 @@ public class Board {
 
     // Returns the winning board that is a result of the shortest path to the strongest victory
     public String findWinningBoard(Map<Integer, String> allWinningStates, Map<String, Move> cameFromMove){
-        String winningState = null;
+        winningState = null;
         int currentMinMoves = Integer.MAX_VALUE;
         for (int pegCount = 1; pegCount <= 3; pegCount++) {
                 // Iterate through the cameFromMove map to find the state with the fewest moves that has the current peg count
@@ -155,15 +155,33 @@ public class Board {
 
         // If a move is valid, this returns the index of the jumped peg + current peg's destination
         // Parameters: any peg index & intended direction of movement
-        public int[] isValidMove (int spotIndex, int direction, String boardState){
+        public int[] isValidMove (int start, int direction, String boardState){
             // If there's a neighbor peg in the proper direction
-            int neighborPeg = Board.adjLists[spotIndex][direction];
+            int neighborPeg = Board.adjLists[start][direction];
             if (neighborPeg != OFFBOARD) {
                 if (boardState.charAt(neighborPeg) != SPACE){
                     int neighborNeighbor = Board.adjLists[neighborPeg][direction];
                     // If the neighborNeighbor is valid AND there's an open space one peg past the neighbor
                     if (neighborNeighbor > INVALIDMOVE && boardState.charAt(neighborNeighbor) == '0') {
                         int[] bundle = {neighborPeg, neighborNeighbor};
+                        return bundle;
+                    }
+                    // I do this exact line 2x...can I remove one?
+                    int[] bundle = {INVALIDMOVE};
+                    return bundle;
+                }
+            }
+            int[] bundle = {INVALIDMOVE};
+            return bundle;
+        }
+
+        // Overloading method with different parameters
+        public int[] isValidMove (String boardState, int jumped, int destination){
+            if (jumped != OFFBOARD) {
+                if (boardState.charAt(jumped) != SPACE){
+                    // If the neighborNeighbor is valid AND there's an open space one peg past the neighbor
+                    if (destination> INVALIDMOVE && boardState.charAt(destination) == '0') {
+                        int[] bundle = {jumped, destination};
                         return bundle;
                     }
                     // I do this exact line 2x...can I remove one?
@@ -277,44 +295,66 @@ public class Board {
 
             System.out.println("What is your first move? Enter a peg #, 1-" + numPegs);
             int startPeg = s.nextInt();
+            s.nextLine();
             String startBoard = String.valueOf(startState);
 
             // Update the board to reflect user's first move
             startState.setCharAt(startPeg, '0');
             String current = String.valueOf(startState);
 
-            while (true){
-                // Finds the best path to victory that stems from the player's 1st move
-                ArrayList<Move> path = triangle.findWinningPath(current, startBoard);
+            // Finds the best path to victory that stems from the player's 1st move
+            ArrayList<Move> path = triangle.findWinningPath(current, startBoard);
+            int moveIndex = 0;
 
-            }
+            // Continue playing until the user is out of moves
+            // I have move depth == 1. WHAT SHOULD IT BE?
+            while (!triangle.findAllMoves(current, 1).isEmpty()){
+                Move ideal = path.get(moveIndex);
+                System.out.println("Optimal move from this position: ");
+                System.out.println("Move " + ideal.start + " over " + ideal.jumped + " into empty spot " + ideal.end);
+                System.out.println("Would you like to make this move? Y or N");
+                String status = s.nextLine().trim();
 
-
-            Move ideal = path.get(0);
-            System.out.println("Optimal move from this position: ");
-            System.out.println("Move " + ideal.start + " over " + ideal.jumped + " into empty spot " + ideal.end);
-            s.nextLine();
-            System.out.println("Would you like to make this move? Y or N");
-            // Why trim here??
-            String status = s.nextLine().trim();
-            if (status.equals("Y") || status.equals("y")){
-                current = triangle.updateState(current, new int[]{ideal.start, ideal.jumped, ideal.end});
-                System.out.println("updated board w/ ideal move.");
-            }
-            else{
-                System.out.println("Enter your desired move in the following format: # over # to #");
-                String[] move = s.nextLine().trim().split(" ");
-                if (move.length == 5){
-                    int start = Integer.parseInt(move[0]);
-                    int jumped = Integer.parseInt(move[2]);
-                    int end = Integer.parseInt(move[4]);
-                    // ADD CHECK FOR INVALID MOVES
-                    current = triangle.updateState(current, new int[]{start, jumped, end});
-                    System.out.println("updated w/ custom move");
+                if (status.equals("Y") || status.equals("y")){
+                    current = triangle.updateState(current, new int[]{ideal.start, ideal.jumped, ideal.end});
+                    System.out.println("updated board w/ ideal move.");
+                    moveIndex += 1;
                 }
                 else{
-                    System.out.println("Invalid format");
+                    System.out.println("Enter your desired move in the following format: # over # to #");
+                    String[] move = s.nextLine().trim().split(" ");
+                    if (move.length == 5){
+                        int start = Integer.parseInt(move[0]);
+                        int jumped = Integer.parseInt(move[2]);
+                        int end = Integer.parseInt(move[4]);
+                        // ADD CHECK FOR INVALID MOVES
+                        if (triangle.isValidMove(current, jumped, end).length > 1){
+                            current = triangle.updateState(current, new int[]{start, jumped, end});
+                            System.out.println("updated w/ custom move");
+                            // Need to find new win path, since user has diverged from the old one
+                            path = triangle.findWinningPath(current, startBoard);
+                            moveIndex = 0;
+                        }
+                        else{
+                            System.out.println("Invalid move.");
+                        }
+                    }
+                    else{
+                        System.out.println("Invalid format");
+                    }
                 }
+            }
+            // Evaluate whether the user won or lost
+            if (triangle.allWinningStates.containsValue(current)) {
+                int pegsLeft = triangle.countPegs(current);
+                if (pegsLeft == 1){
+                    System.out.println("Congratulations! You won, with " + pegsLeft + " peg remaining.");
+                }
+                else{
+                    System.out.println("Congratulations! You won, with " + pegsLeft + " pegs remaining.");
+                }
+            } else {
+                System.out.println("No more moves. Better luck next time!");
             }
         }
     }
