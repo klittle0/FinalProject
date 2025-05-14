@@ -18,6 +18,7 @@ public class Board {
     static final int RIGHT = 3;
     static final int DOWNRIGHT = 4;
     static final int DOWNLEFT = 5;
+    private TrianglePegGame window;
 
     public Board(int n) {
         dimension = n;
@@ -36,6 +37,8 @@ public class Board {
         directions[3] = RIGHT;
         directions[4] = DOWNRIGHT;
         directions[5] = DOWNLEFT;
+
+        window = new TrianglePegGame(dimension);
     }
 
     // Returns the # of pegs left in any given board state
@@ -53,7 +56,7 @@ public class Board {
     public String findWinningBoard(Map<Integer, String> allWinningStates, Map<String, Move> cameFromMove){
         winningState = null;
         int currentMinMoves = Integer.MAX_VALUE;
-        for (int pegCount = 1; pegCount <= 3; pegCount++) {
+        for (int pegCount = 1; pegCount <= numPegs; pegCount++) {
                 // Iterate through the cameFromMove map to find the state with the fewest moves that has the current peg count
                 for (Map.Entry<String, Move> each : cameFromMove.entrySet()) {
                     String state = each.getKey();
@@ -71,6 +74,7 @@ public class Board {
             }
         return winningState;
     }
+
     // Finds every possible board state & corresponding move. Once path is complete, retraces the shortest winning path
     public ArrayList<Move> findWinningPath(String currentState, String startState){
         Queue<String> queue = new LinkedList<>();
@@ -149,9 +153,9 @@ public class Board {
             nextState.setCharAt(end, '1');
             String next = nextState.toString();
 
-            // Do I need to update the adjacency lists here?
             return next;
         }
+
 
         // If a move is valid, this returns the index of the jumped peg + current peg's destination
         // Parameters: any peg index & intended direction of movement
@@ -258,6 +262,7 @@ public class Board {
                 neighborPegs[LEFT] = -1;
                 neighborPegs[UPLEFT] = -1;
             }
+
             // Up + right diagonal neighbor
             // Right neighbor
             if (offset != row) {
