@@ -1,7 +1,6 @@
 import java.util.*;
 
 public class Board {
-    // Creates instance of board class
     static int dimension;
     static int numPegs;
     static String winningState;
@@ -18,8 +17,8 @@ public class Board {
     static final int RIGHT = 3;
     static final int DOWNRIGHT = 4;
     static final int DOWNLEFT = 5;
-    private TrianglePegGame window;
 
+    // Creates instance of board class
     public Board(int n) {
         dimension = n;
 
@@ -29,7 +28,6 @@ public class Board {
         }
         numPegs = pegs;
         adjLists = makeAdjacencyLists(numPegs);
-        // CHECK: is there a better way I can do this??
         directions = new int[6];
         directions[0] = LEFT;
         directions[1] = UPLEFT;
@@ -37,8 +35,6 @@ public class Board {
         directions[3] = RIGHT;
         directions[4] = DOWNRIGHT;
         directions[5] = DOWNLEFT;
-
-        window = new TrianglePegGame(dimension);
     }
 
     // Returns the # of pegs left in any given board state
@@ -56,8 +52,8 @@ public class Board {
     public String findWinningBoard(Map<Integer, String> allWinningStates, Map<String, Move> cameFromMove){
         winningState = null;
         int currentMinMoves = Integer.MAX_VALUE;
-        for (int pegCount = 1; pegCount <= numPegs; pegCount++) {
-                // Iterate through the cameFromMove map to find the state with the fewest moves that has the current peg count
+        for (int pegCount = 1; pegCount <= 3; pegCount++) {
+                // Iterates through the cameFromMove map to find the state with the fewest moves that has the current peg count
                 for (Map.Entry<String, Move> each : cameFromMove.entrySet()) {
                     String state = each.getKey();
                     Move move = each.getValue();
@@ -110,7 +106,6 @@ public class Board {
                 if (!visited.contains(nextState)) {
                     visited.add(nextState);
                     queue.add(nextState);
-                    // Correct thing to do??
                     nextMove.incrementNumMoves();
                     cameFromMove.put(nextState, nextMove);
                 }
@@ -170,7 +165,6 @@ public class Board {
                         int[] bundle = {neighborPeg, neighborNeighbor};
                         return bundle;
                     }
-                    // I do this exact line 2x...can I remove one?
                     int[] bundle = {INVALIDMOVE};
                     return bundle;
                 }
@@ -188,7 +182,6 @@ public class Board {
                         int[] bundle = {jumped, destination};
                         return bundle;
                     }
-                    // I do this exact line 2x...can I remove one?
                     int[] bundle = {INVALIDMOVE};
                     return bundle;
                 }
@@ -197,10 +190,10 @@ public class Board {
             return bundle;
         }
 
-        // Returns list of all possible moves given a current board state (parameter)
+        // Returns list of all possible moves given a current board state
         public ArrayList<Move> findAllMoves (String currentState, int moveDepth){
             ArrayList<Move> allMoves = new ArrayList<>();
-            // For every peg on the board (NO EMPTY SPACES)
+            // For every peg on the board (empty spaces not included)
             for (int i = 1; i <= numPegs; i++) {
                 if (currentState.charAt(i) == '1') {
                     // Check all directions in which it could possibly move & see if they're valid
@@ -224,7 +217,7 @@ public class Board {
         public int[][] makeAdjacencyLists ( int numPegs){
             int[][] adjLists = new int[numPegs + 1][6];
             // For every peg, find adjacency lists for all neighboring pegs
-            // This is currently indexing at peg 1 = 1. Try to switch to 0-indexed later!
+            // This is currently indexing at peg 1 = 1.
             for (int i = 1; i <= numPegs; i++) {
                 adjLists[i] = getNeighbors(i);
             }
@@ -246,7 +239,6 @@ public class Board {
                 if (pegNum <= rowMax) {
                     // Row goes from 1 to board.dimension
                     row = i;
-                    // Maybe come up with better formula...Goes from 1 to row width
                     offset = row - (rowMax - pegNum);
                     break;
                 }
@@ -291,14 +283,13 @@ public class Board {
             int n = s.nextInt();
             Board triangle = new Board(n);
 
-            //Later, change this to be 0-indexed
             // Construct start board where every spot is filled
             StringBuilder startState = new StringBuilder("x");
             for (int i = 0; i < numPegs; i++){
                 startState.append('1');
             }
 
-            System.out.println("What is your first move? Enter a peg #, 1-" + numPegs);
+            System.out.println("Which peg would you like to remove to start? Enter a peg number, 1-" + numPegs);
             int startPeg = s.nextInt();
             s.nextLine();
             String startBoard = String.valueOf(startState);
@@ -312,17 +303,16 @@ public class Board {
             int moveIndex = 0;
 
             // Continue playing until the user is out of moves
-            // I have move depth == 1. WHAT SHOULD IT BE?
             while (!triangle.findAllMoves(current, 1).isEmpty()){
                 Move ideal = path.get(moveIndex);
                 System.out.println("Optimal move from this position: ");
-                System.out.println("Move " + ideal.start + " over " + ideal.jumped + " into empty spot " + ideal.end);
+                System.out.println("Move peg " + ideal.start + " over " + ideal.jumped + " into empty spot " + ideal.end);
                 System.out.println("Would you like to make this move? Y or N");
                 String status = s.nextLine().trim();
 
                 if (status.equals("Y") || status.equals("y")){
                     current = triangle.updateState(current, new int[]{ideal.start, ideal.jumped, ideal.end});
-                    System.out.println("updated board w/ ideal move.");
+                    System.out.println("updated board with ideal move.");
                     moveIndex += 1;
                 }
                 else{
@@ -332,7 +322,7 @@ public class Board {
                         int start = Integer.parseInt(move[0]);
                         int jumped = Integer.parseInt(move[2]);
                         int end = Integer.parseInt(move[4]);
-                        // ADD CHECK FOR INVALID MOVES
+                        // If the desired move is valid, update board
                         if (triangle.isValidMove(current, jumped, end).length > 1){
                             current = triangle.updateState(current, new int[]{start, jumped, end});
                             System.out.println("updated w/ custom move");
@@ -345,11 +335,11 @@ public class Board {
                         }
                     }
                     else{
-                        System.out.println("Invalid format");
+                        System.out.println("Invalid format.");
                     }
                 }
             }
-            // Evaluate whether the user won or lost
+            // Evaluate whether the user won or lost + print proper message
             if (triangle.allWinningStates.containsValue(current)) {
                 int pegsLeft = triangle.countPegs(current);
                 if (pegsLeft == 1){
